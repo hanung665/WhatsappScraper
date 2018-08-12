@@ -161,14 +161,14 @@ def main():
                             print("audio")
                         elif is_pdf(html_val):
                             ""  # c.click()
-                        elif is_video_desc(html_val):
+                        elif is_video_desc(html_val): # please fix
                             c.click()
                             a = input_raw("wtf  1")
                             time.sleep(10)
                             src = soup.select('video[src*="blob"]')
                             url = src[0]['src']
                             downloadBlob(driver, url, "video")
-                        elif is_video(html_val):
+                        elif is_video(html_val): # please fix
                             c.click()
                             a = input_raw("wtf ")
                             src = soup.select('video[src*="blob"]')
