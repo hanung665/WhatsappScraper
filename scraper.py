@@ -217,13 +217,13 @@ def generateQR(driver):
     img = driver.find_element_by_css_selector("img[alt=\"Scan me!\"]")
     img64 = bytes(img.get_attribute("src").replace(
         "data:image/png;base64,", ""))
-    open("/var/temp/qrcode.png", "wb").write(img64.decode('base64'))
+    open("./qrcode.png", "wb").write(img64.decode('base64'))
 
 def reloadQR(driver):
     img = driver.find_element_by_css_selector("img[alt=\"Scan me!\"]")
     img64 = bytes(img.get_attribute("src").replace(
         "data:image/png;base64,", ""))
-    open("/var/temp/qrcode.png", "wb").write(img64.decode('base64'))
+    open("./qrcode.png", "wb").write(img64.decode('base64'))
 
 def get_image(driver, img_url):
     '''Given an images url, return a binary screenshot of it in png format.'''

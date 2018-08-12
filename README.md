@@ -1,5 +1,7 @@
 # Whatsapp Scraper
 
+UwU
+
 ## Dependencies
 
 1. Python Selenium
