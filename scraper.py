@@ -13,9 +13,7 @@ import redis
 import re
 import config as cfg
 username = sys.argv[1]
-# Yuk Gabung kumpul di WA Group 2019 GAPRES
 
-# https://chat.whatsapp.com/A5yK4NemFVeECXRJisqjdL
 from PIL import Image
 from selenium import webdriver
 from selenium.common.exceptions import NoSuchElementException, StaleElementReferenceException
@@ -23,7 +21,6 @@ from selenium.webdriver.common.keys import Keys
 from pymongo import MongoClient
 from bson.objectid import ObjectId
 from bs4 import BeautifulSoup
-
 
 def main():
     driverPath = cfg.app['driverPath']
