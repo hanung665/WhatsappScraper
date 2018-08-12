@@ -1,6 +1,6 @@
 # Whatsapp Scraper
 
-UwU
+UwU, get Message from room (group, personal), download image, audio, get phone number, etc
 
 ## Dependencies
 
