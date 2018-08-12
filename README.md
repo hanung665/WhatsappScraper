@@ -17,6 +17,11 @@
 - dynamic scrolling
 - don't click the room if the message is same
 
+## Usage
+
+1. `python parser.py`
+2. `python scraper.py SOME_UNIQUE_ID_FOR_SESSION`
+
 ## Contributors
 
 *UwU/Dheby* & More
