@@ -210,7 +210,6 @@ def to_info(string):
     data = [time, date, phone]
     return data
 
-
 def get_text(html, group_name):
     soup = BeautifulSoup(html, 'html.parser')
     copyable_text = soup.select("span.copyable-text")  # val

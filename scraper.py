@@ -116,7 +116,7 @@ def main():
                     group_name_css)
                 group_name = group_name_css[0].text if len(
                     group_name_css) > 0 else ""
-                # update_status(group_name, "Running")
+                update_status(group_name, "Running")
                 default_limit = 12
                 latest_limit = 0
                 print("[INFO] Scraping Group : " + group_name)
@@ -162,18 +162,22 @@ def main():
                         elif is_pdf(html_val):
                             ""  # c.click()
                         elif is_video_desc(html_val): # please fix
-                            c.click()
-                            a = input_raw("wtf  1")
-                            time.sleep(10)
-                            src = soup.select('video[src*="blob"]')
-                            url = src[0]['src']
-                            downloadBlob(driver, url, "video")
+                            ""
+                            # next
+                            # c.click()
+                            # a = input_raw("wtf  1")
+                            # time.sleep(10)
+                            # src = soup.select('video[src*="blob"]')
+                            # url = src[0]['src']
+                            # downloadBlob(driver, url, "video")
                         elif is_video(html_val): # please fix
-                            c.click()
-                            a = input_raw("wtf ")
-                            src = soup.select('video[src*="blob"]')
-                            url = src[0]['src']
-                            downloadBlob(driver, url, "video")
+                            ""
+                            # next
+                            # c.click()
+                            # a = input_raw("wtf ")
+                            # src = soup.select('video[src*="blob"]')
+                            # url = src[0]['src']
+                            # downloadBlob(driver, url, "video")
                         elif is_img_desc(html_val):
                             src = soup.select('img[src*="blob"]')
                             url = src[0]['src']
@@ -201,7 +205,7 @@ def main():
                     if new_height == last_height:
                         break
                     last_height = new_height
-                # update_status(group_name, "Queued")
+                update_status(group_name, "Queued")
 
 def isLoggedInx(driver):
     try:

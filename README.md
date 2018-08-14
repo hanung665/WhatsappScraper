@@ -21,7 +21,7 @@ UwU, get Message from room (group, personal), download image, audio, get phone n
 
 ## Usage
 
-1. `python parser.py`
+1. `python3 parser.py` (python3 for better stringm)
 2. `python scraper.py SOME_UNIQUE_ID_FOR_SESSION`
 
 ## Contributors
