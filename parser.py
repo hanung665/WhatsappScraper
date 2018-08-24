@@ -401,7 +401,8 @@ def build_data(_type, _time, date, phone, text_string, group_name, media, region
             "type": _type,
             "is_adv": is_adv,
             "regional_code": regional_code,
-            "logged_number": logged_number
+            "logged_number": logged_number,
+            "sentiment": ""
         }
         chats.insert(data)
 
