@@ -1,20 +1,19 @@
 # coding: utf-8
 
-import time
+import re
 import os
-import json
 import sys
+import time
+import json
+import redis
+import base64
 import pprint
+import signal
+import os.path
 import logging
 import hashlib
 import requests
-import base64
-import redis
-import re
-import config as cfg
-username = sys.argv[1]
 
-from PIL import Image
 from selenium import webdriver
 from selenium.common.exceptions import NoSuchElementException, StaleElementReferenceException
 from selenium.webdriver.common.keys import Keys
@@ -22,25 +21,16 @@ from pymongo import MongoClient
 from bson.objectid import ObjectId
 from bs4 import BeautifulSoup
 
-def main():
-    driverPath = cfg.app['driverPath']
-    dataPath = './profile/'+username
+client = MongoClient("mongodb://127.0.0.1:27017")
+db = client["osint_1"]
+    
+try:
+    regional_code = sys.argv[1]
+    phone_number = sys.argv[2]
+except:
+    print("Yang bener lu kalo jalanin, python3 scraper.py regional_code phone_number")
 
-    options = webdriver.ChromeOptions()
-    prefs = {"download.default_directory": "/media/uwu"}
-    options.add_experimental_option("prefs", prefs)
-
-    options.add_argument("--user-data-dir=" + dataPath)
-    # if cfg.app['headless']:
-    #     options.add_argument('headless')
-
-    if cfg.app['no-sandbox']:
-        options.add_argument('no-sandbox')
-
-    options.add_argument(
-        'user-agent=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_3) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/64.0.3282.167 Safari/537.36')
-    driver = webdriver.Chrome(chrome_options=options,
-                              executable_path=driverPath)
+def main(driver):
     driver.get("https://web.whatsapp.com")
     time.sleep(10)
 
@@ -55,8 +45,7 @@ def main():
         while True:
             try:
                 try:
-                    reload = driver.find_element_by_css_selector(
-                        "span > div[role=\"button\"]")
+                    reload = driver.find_element_by_css_selector("span > div[role=\"button\"]")
                     reload.click()
                     time.sleep(5)
                 except NoSuchElementException:
@@ -66,32 +55,27 @@ def main():
                 break
 
     if isLoggedIn is True:
-        time.sleep(30)
-        print("Starting...")
-        check = driver.find_elements_by_css_selector(
-            "div[data-animate-modal-popup]")
+        retake(driver)
+        time.sleep(10)
+        retake(driver)
+        check = driver.find_elements_by_css_selector("div[data-animate-modal-popup]")
         for x in range(0, 30):
             if len(check) == 0:
                 break
 
-        pane_selector = "div#pane-side"
-
         print("collecting contact list")
 
-        lastHeight = driver.execute_script(
-            "return document.querySelector(\"div#pane-side\").scrollHeight")
+        retake(driver)
 
+        lastHeight = driver.execute_script("return document.querySelector(\"div#pane-side\").scrollHeight")
+        retake(driver)
         while True:
-            driver.execute_script(
-                "window.scrollTo(0, document.querySelector(\"div#pane-side\").scrollHeight);")
-            newHeight = driver.execute_script(
-                "return document.querySelector(\"div#pane-side\").scrollHeight")
+            driver.execute_script("window.scrollTo(0, document.querySelector('div#pane-side').scrollHeight);")
+            newHeight = driver.execute_script("return document.querySelector('div#pane-side').scrollHeight")
             if newHeight == lastHeight:
                 break
             lastHeight = newHeight
-
-        print("start scrolling")
-
+        retake(driver)
         vid_arr = []
         while True:
             contacts = "div#pane-side > div > div > div > div"
@@ -101,35 +85,33 @@ def main():
                 try:
                     x.click()
                 except:
+                    retake(driver)
                     continue
+                
                 time.sleep(5)
 
-                last_height = driver.execute_script(
-                    "return document.querySelector(\"div.copyable-area > div\").scrollHeight")
-                scroll_x = 0
-                scroll_x_total = 10
-                """
-                scroll to top, and wait to scrape
-                """
-                group_name_css = 'div#main span[title][dir="auto"]'
-                group_name_css = driver.find_elements_by_css_selector(
-                    group_name_css)
-                group_name = group_name_css[0].text if len(
-                    group_name_css) > 0 else ""
+                try:
+                    last_height = driver.execute_script("return document.querySelector('div.copyable-area > div').scrollHeight")
+                except:
+                    retake(driver)
+
+                try:
+                    group_name_css = 'div#main span[title][dir="auto"]'
+                    group_name_css = driver.find_elements_by_css_selector(group_name_css)
+                    group_name = group_name_css[0].text if len(group_name_css) > 0 else ""
+                except:
+                    retake(driver)
+
                 update_status(group_name, "Running")
-                default_limit = 12
-                latest_limit = 0
                 print("[INFO] Scraping Group : " + group_name)
                 while True:
-                    check_limit = 0
-                    scroll_x += 1
-                    if scroll_x == scroll_x_total:
-                        break
-                    # Scroll down to bottom
-                    driver.find_element_by_css_selector(
-                        'div.copyable-area > div').send_keys(Keys.CONTROL + Keys.HOME)
-                    # Wait to load page
-
+                    retake(driver)
+                    if last_height < 18000:
+                        try:
+                            driver.find_element_by_css_selector('div.copyable-area > div').send_keys(Keys.CONTROL + Keys.HOME)
+                        except:
+                            retake(driver)
+                    retake(driver)
                     """
                     select all chat in current scroll / overflow
                     div#main  div.copyable-area > div[tabindex] > div:nth-child(2) > div
@@ -139,73 +121,65 @@ def main():
                     chats2 = "div#main div.copyable-area > div[tabindex] > div:nth-child(2) > div"
                     chats2 = driver.find_elements_by_css_selector(chats2)
                     chats = chats1 + chats2
-
-                    check_limit = len(chats)
-                    # r.append("chats", check_limit)
-                    check = 0
+                    retake(driver)
                     for c in chats:
-                        # try:
                         html = ""
+                        
+                        retake(driver)
+
                         try:
                             html = c.get_attribute('innerHTML')
                         except:
+                            retake(driver)
                             continue
+                        
                         html_val = html
                         soup = BeautifulSoup(html, 'html.parser')
-                        url = ""
+                        file_name = ""
+                        retake(driver)
+                        if is_audio(html_val) or is_img_desc(html_val) or is_img(html_val):
+                            time_ = ""
+                            spans = soup.select("span")
+                            for span in spans:
+                                text = span.text
+                                if len(text) == 5 and ":" in text:
+                                    time_ = text                            
+                            retake(driver)
 
-                        if is_audio(html_val):
-                            src = soup.select('audio[src*="blob"]')
-                            url = src[0]['src']
-                            downloadBlob(driver, url, "audio")
-                            print("audio")
-                        elif is_pdf(html_val):
-                            ""  # c.click()
-                        elif is_video_desc(html_val): # please fix
-                            ""
-                            # next
-                            # c.click()
-                            # a = input_raw("wtf  1")
-                            # time.sleep(10)
-                            # src = soup.select('video[src*="blob"]')
-                            # url = src[0]['src']
-                            # downloadBlob(driver, url, "video")
-                        elif is_video(html_val): # please fix
-                            ""
-                            # next
-                            # c.click()
-                            # a = input_raw("wtf ")
-                            # src = soup.select('video[src*="blob"]')
-                            # url = src[0]['src']
-                            # downloadBlob(driver, url, "video")
-                        elif is_img_desc(html_val):
-                            src = soup.select('img[src*="blob"]')
-                            url = src[0]['src']
-                            downloadBlob(driver, url, "img")
-                            print("img with desc")
-                        elif is_img(html_val):
-                            src = soup.select('img[src*="blob"]')
-                            url = src[0]['src']
-                            downloadBlob(driver, url, "img")
-                            print("img only")
+                            phone = soup.select('span[role="button"]')
+                            phone = phone[0].text
+                            phone = re.sub("[^0-9]", "", str(phone))
 
-                        post_url = cfg.app["url"]
-                        payload = {"html": html, "for": "dirty_html", "type": "",
-                                   "group_name": group_name, "url": url, "type": ""}
+                            buffhash = phone + time_
+                            buffhash = re.sub("[^0-9]", "", str(buffhash))
+                            retake(driver)
+                            if is_img_desc(html_val):
+                                src = soup.select('img[src*="blob"]')
+                                data_pre_text = soup.select('div[data-pre-plain-text]')
+                                uniq_img_desc = info = funiq_img_desc(data_pre_text[0]["data-pre-plain-text"])
+                                file_name = uniq_img_desc + '.jpeg'
+                                url = src[0]['src']
+                                downloadBlob(driver, url, file_name)
+                            elif is_img(html_val):
+                                src = soup.select('img[src*="blob"]')
+                                url = src[0]['src']
+                                file_name = buffhash + '.jpeg'
+                                downloadBlob(driver, url, file_name)
+                        post_url = 'http://localhost:3500/dirty_html'
+                        payload = {"html": html, "file_name": file_name, "for": "dirty_html","group_name": group_name, "regional_code": regional_code, "phone_number": phone_number}
                         requests.post(post_url, data=payload)
-                    if scroll_x_total == scroll_x:
-                        break
-                    else:
-                        print("scrolling")
-
+                        retake(driver)
                     time.sleep(2)
-                    # Calculate new scroll height and compare with last scroll height
-                    new_height = driver.execute_script(
-                        "return document.querySelector(\"div.copyable-area > div\").scrollHeight")
+                    new_height = driver.execute_script("return document.querySelector('div.copyable-area > div').scrollHeight")
                     if new_height == last_height:
                         break
                     last_height = new_height
                 update_status(group_name, "Queued")
+
+def retake(driver):
+    check = driver.find_elements_by_css_selector('div[data-animate-modal-popup="true"] div[role="button"]')
+    if len(check) == 2:
+        check[1].click()
 
 def isLoggedInx(driver):
     try:
@@ -226,35 +200,7 @@ def reloadQR(driver):
         "data:image/png;base64,", ""))
     open("./qrcode.png", "wb").write(img64.decode('base64'))
 
-def get_image(driver, img_url):
-    '''Given an images url, return a binary screenshot of it in png format.'''
-    driver.get(img_url)
-
-    # Get the dimensions of the browser and image.
-    orig_h = driver.execute_script("return window.outerHeight")
-    orig_w = driver.execute_script("return window.outerWidth")
-    margin_h = orig_h - driver.execute_script("return window.innerHeight")
-    margin_w = orig_w - driver.execute_script("return window.innerWidth")
-    new_h = driver.execute_script(
-        'return document.getElementsByTagName("img")[0].height')
-    new_w = driver.execute_script(
-        'return document.getElementsByTagName("img")[0].width')
-
-    # Resize the browser window.
-    logging.info("Getting Image: orig %sX%s, marg %sX%s, img %sX%s - %s" % (
-        orig_w, orig_h, margin_w, margin_h, new_w, new_h, img_url))
-    driver.set_window_size(new_w + margin_w, new_h + margin_h)
-
-    name = to_hash(img_url)
-    # Get the image by taking a screenshot of the page.
-    driver.get_screenshot_as_file('./download/'+name+".png")
-    driver.save_screenshot('./download/'+name+".png")
-    # Set the window size back to what it was.
-    driver.set_window_size(orig_w, orig_h)
-    return True
-
-
-def downloadBlob(driver, uri, filetype):
+def downloadBlob(driver, uri, filename):
     result = driver.execute_async_script("""
         var uri = arguments[0];
         var callback = arguments[1];
@@ -269,16 +215,14 @@ def downloadBlob(driver, uri, filetype):
     if type(result) == int:
         return "none"
     else:
-        ext = ""
-        if filetype == "img":
-            ext = ".jpg"
-        filename = str(uri).split("/")[-1]+ext
-        path = "/var/app/storage/" + filename
-        open(path, 'wb').write(base64.b64decode(result))
+        # filename = str(uri).split("/")[-1]+ext
+        path = "/var/app/storage/whatsapp/chat_media/" + filename
+        if not os.path.isfile(path):
+            open(path, 'wb').write(base64.b64decode(result))
 
 def mongo(col):
     client = MongoClient("mongodb://127.0.0.1:27017")
-    db = client["tetew"]
+    db = client["osint_1"]
     col = db[col]
     return col
 
@@ -346,16 +290,18 @@ def is_video_desc(html):
     return len(bg_image) > 0 and len(media_play) > 0 and len(data_pre_text) > 0 and len(copyable_text) > 0
 
 def update_status(group_name, status):
-    groups = mongo("groups")
+    groups = mongo("whatsapp_groups")
     get = groups.find_one({"name": group_name})
     if get:
         get["latest_scrap"] = time.strftime("%Y-%m-%d %H:%M:%S")
+        get["latest_scrap_unix"] = int(time.time())
         get["crawling_status"] = status
         groups.update({"_id": ObjectId(str(get["_id"]))}, get)
     else:
         group = {
             "name": group_name,
             "insert_date": time.strftime("%Y-%m-%d %H:%M:%S"),
+            "insert_date_unix": int(time.time()),
             "latest_scrap": time.strftime("%Y-%m-%d %H:%M:%S"),
             "crawling_status": status,
             "total_member": 0
@@ -365,5 +311,31 @@ def update_status(group_name, status):
 def to_uniq(string):
     return base64.b64encode(string)
 
+def funiq_img_desc(string):
+    info = string.replace("[", "").replace(" ", "").split("]")
+    dt = info[0].split(",")
+    time = dt[0]
+    date = dt[1]
+    phone = info[1].replace(":", "")
+    phone = re.sub("[^0-9]", "", str(phone))
+    data = time+date+phone
+    data = re.sub("[^0-9]", "", str(data))
+    return data
+
+def exit_hand(sig, frame):
+    driver.quit()
+
 if __name__ == '__main__':
-    main()
+    driverPath = '/usr/bin/chromedriver'
+    dataPath = './profile/' + regional_code + '_' +phone_number
+
+    options = webdriver.ChromeOptions()
+    options.add_argument("--user-data-dir=" + dataPath)
+    options.add_argument('headless')
+    options.add_argument('no-sandbox')
+    options.add_argument('user-agent=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_3) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/64.0.3282.167 Safari/537.36')
+    
+    driver = webdriver.Chrome(chrome_options=options, executable_path=driverPath)
+    signal.signal(signal.SIGINT, exit_hand)
+    main(driver)
+

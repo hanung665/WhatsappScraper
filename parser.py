@@ -26,8 +26,8 @@ app.config.from_object(__name__)
 
 
 def mongo(col):
-    client = MongoClient("mongodb://127.0.0.1/27017")
-    db = client["tetew"]
+    client = MongoClient("mongodb://localhost:27017")
+    db = client["osint_1"]
     col = db[col]
     return col
 
@@ -183,7 +183,6 @@ def is_audio(html):
   }
 """
 
-
 def to_fuck_name(string):
     if len(string) > 0:
         kean_nesbit = string.split("/")
@@ -191,14 +190,12 @@ def to_fuck_name(string):
     else:
         return ""
 
-
 def to_md5(time, date, phone, text_string, group_name):
     ass = str(time) + str(date) + str(phone) + \
         str(text_string.encode('utf-8')) + str(group_name)
     m = hashlib.md5()
     m.update(ass.encode('utf-8'))
     return str(m.hexdigest())
-
 
 def to_info(string):
     info = string.replace("[", "").replace(" ", "").split("]")
@@ -210,7 +207,7 @@ def to_info(string):
     data = [time, date, phone]
     return data
 
-def get_text(html, group_name):
+def get_text(html, group_name, regional_code, logged_number):
     soup = BeautifulSoup(html, 'html.parser')
     copyable_text = soup.select("span.copyable-text")  # val
     data_pre_text = soup.select("div[data-pre-plain-text]")  # attr
@@ -219,10 +216,9 @@ def get_text(html, group_name):
     chat = copyable_text[0].text
     info = to_info(data_pre_text[0]["data-pre-plain-text"])
     # build_data(_type, time,date,phone,text_string, group_name, media)
-    build_data("text", info[0], info[1], info[2], chat, group_name, "")
+    build_data("text", info[0], info[1], info[2], chat, group_name, "", regional_code, logged_number)
 
-
-def get_link(html, group_name):
+def get_link(html, group_name, regional_code, logged_number):
     soup = BeautifulSoup(html, 'html.parser')
     b64_image = soup.select('img[src*="data"]')
     data_pre_text = soup.select('div[data-pre-plain-text]')
@@ -231,10 +227,9 @@ def get_link(html, group_name):
     info = to_info(data_pre_text[0]["data-pre-plain-text"])
     media = b64_image[0]["src"]
     # build_data(_type, time,date,phone,text_string, group_name, media)
-    build_data("text", info[0], info[1], info[2], chat, group_name, media)
+    build_data("text", info[0], info[1], info[2], chat, group_name, media, regional_code, logged_number)
 
-
-def get_link_desc(html, group_name):
+def get_link_desc(html, group_name, regional_code, logged_number):
     soup = BeautifulSoup(html, 'html.parser')
     b64_image = soup.select('img[src*="data"]')
     data_pre_text = soup.select('div[data-pre-plain-text]')
@@ -249,10 +244,10 @@ def get_link_desc(html, group_name):
     chat = chat + "<~!~>" + link
     info = to_info(data_pre_text[0]["data-pre-plain-text"])
     # build_data(_type, time,date,phone,text_string, group_name, media)
-    build_data("text", info[0], info[1], info[2], chat, group_name, media)
+    build_data("text", info[0], info[1], info[2], chat, group_name, media, regional_code, logged_number)
     print("link desc")
 
-def get_img(html, group_name, url):
+def get_img(html, group_name, url, file_name, regional_code, logged_number):
     soup = BeautifulSoup(html, 'html.parser')
     blob_image = soup.select('img[src*="blob"]')
     copyable_text = soup.select('span.copyable-text')
@@ -267,25 +262,20 @@ def get_img(html, group_name, url):
         text = span.text
         if len(text) == 5 and ":" in text:
             time = text
-    filename = to_fuck_name(blob_image[0]["src"])
-    # build_data(_type, time,date,phone,text_string, group_name, media)
-    print("IMAGE ONLY")
-    build_data("image", time, "", phone, "", group_name, filename)
+    build_data("image", time, "", phone, "", group_name, file_name, regional_code, logged_number)
 
 
-def get_img_desc(html, group_name, url):
+def get_img_desc(html, group_name, url, file_name, regional_code, logged_number):
     soup = BeautifulSoup(html, 'html.parser')
     data_pre_text = soup.select('div[data-pre-plain-text]')
     img = soup.select('img[src*="blob"]')
     copyable_text = soup.select('span.copyable-text')
     chat = copyable_text[0].text
-    filename = to_fuck_name(img[0]["src"])
     info = to_info(data_pre_text[0]["data-pre-plain-text"])
-    # build_data(_type, time,date,phone,text_string, group_name, media)
-    build_data("image", info[0], info[1], info[2], chat, group_name, filename)
+    build_data("image", info[0], info[1], info[2], chat, group_name, file_name, regional_code, logged_number)
 
 
-def get_video(html, group_name, url):
+def get_video(html, group_name, url, regional_code, logged_number):
     soup = BeautifulSoup(html, 'html.parser')
     bg_style = soup.select('div[style*="background-image"]')
     media_play = soup.select('span[data-icon="media-play"]')
@@ -302,10 +292,10 @@ def get_video(html, group_name, url):
             time = text
     filename = to_fuck_name(url)
     # build_data(_type, time,date,phone,text_string, group_name, media)
-    build_data("video", time, "", phone, "", group_name, filename)
+    build_data("video", time, "", phone, "", group_name, filename, regional_code, logged_number)
 
 
-def get_video_desc(html, group_name, url):
+def get_video_desc(html, group_name, url, regional_code, logged_number):
     soup = BeautifulSoup(html, 'html.parser')
     bg_image = soup.select('div[style*="background-image"]')
     data_pre_text = soup.select('div[data-pre-plain-text]')
@@ -314,10 +304,10 @@ def get_video_desc(html, group_name, url):
     filename = to_fuck_name(url)
     info = to_info(data_pre_text[0]["data-pre-plain-text"])
     # build_data(_type, time,date,phone,text_string, group_name, media)
-    build_data("video", info[0], info[1], info[2], chat, group_name, filename)
+    build_data("video", info[0], info[1], info[2], chat, group_name, filename, regional_code, logged_number)
 
 
-def get_group_invite(html, group_name):
+def get_group_invite(html, group_name, regional_code, logged_number):
     soup = BeautifulSoup(html, 'html.parser')
     data_pre_text = soup.select('div[data-pre-plain-text]')
     img = soup.select('img[src*="data"]')
@@ -331,10 +321,10 @@ def get_group_invite(html, group_name):
         buff += x.text + " "
     chat = copyable_text[0].text
     chat = chat + " " + buff
-    build_data("invite_url", info[0], info[1], info[2], chat, group_name, href)
+    build_data("invite_url", info[0], info[1], info[2], chat, group_name, href, regional_code, logged_number)
 
 
-def get_pdf(html, group_name, url):
+def get_pdf(html, group_name, url, regional_code, logged_number):
     soup = BeautifulSoup(html, 'html.parser')
     phone = soup.select('span[role="button"]')
     name = soup.select('span[dir="auto"]')
@@ -352,10 +342,10 @@ def get_pdf(html, group_name, url):
         if len(text) == 5 and ":" in text:
             time = text
     filename = to_fuck_name(url)
-    build_data("document", time, "", phone, chat, group_name, filename)
+    build_data("document", time, "", phone, chat, group_name, filename, regional_code, logged_number)
 
 
-def get_audio(html, group_name, url):
+def get_audio(html, group_name, url, regional_code, logged_number):
     soup = BeautifulSoup(html, 'html.parser')
     audio_tag = soup.select('audio[src*="blob"]')
     phone = soup.select('span[role="button"]')
@@ -370,7 +360,7 @@ def get_audio(html, group_name, url):
         if len(text) == 5 and ":" in text:
             time = text
     filename = to_fuck_name(url)
-    build_data("audio", time, "", phone, "", group_name, filename)
+    build_data("audio", time, "", phone, "", group_name, filename, regional_code, logged_number)
 
 
 def latest_date(group_name):
@@ -378,9 +368,8 @@ def latest_date(group_name):
     latest = data.find_one({"group_name": group_name})
     return latest["date"]
 
-
-def build_data(_type, _time, date, phone, text_string, group_name, media):
-    chats = mongo("chats")
+def build_data(_type, _time, date, phone, text_string, group_name, media, regional_code, logged_number):
+    chats = mongo("whatsapp_chats")
 
     if phone == "":
         phone = group_name
@@ -392,8 +381,14 @@ def build_data(_type, _time, date, phone, text_string, group_name, media):
     if check:
         "diem aja"
     else:
+        is_adv = False
+        ads_word = ['PPOB', 'referral', 'payfazz', 'Agen Pulsa', 'Info Lowongan Kerja', '#loker', 'Lowongan Kerja', 'Diskon', 'Promo', 'Potongan Harga']
+        if any(x in text_string for x in ads_word):
+            is_adv = True
+        date = time.strftime("%-m/%-d/%Y") if date == "" else date
         data = {
             "insert_date": str(time.strftime("%Y-%m-%d %H:%M:%S")),
+            "insert_date_unix": int(time.time()),
             "sentiment": "",
             "media": media,
             "time": _time,
@@ -404,17 +399,11 @@ def build_data(_type, _time, date, phone, text_string, group_name, media):
             "address": phone,
             "date": date,
             "type": _type,
-            "sentiment_info": {
-                "positive": 0,
-                "informational": 0,
-                "negative": 0,
-                "provocative": 0
-            }
+            "is_adv": is_adv,
+            "regional_code": regional_code,
+            "logged_number": logged_number
         }
-        print(_time)
-        print(data)
-        #chats.insert(data)
-
+        chats.insert(data)
 
 @app.route("/dirty_html", methods=['POST'])
 def _dirty_html():
@@ -422,41 +411,42 @@ def _dirty_html():
     for k, v in request.form.items():
         post[k] = v
     if post["for"] == "dirty_html":
-        tipe = post["type"]
-        group_name = post["group_name"].encode('utf-8')
-        this, html_val = str(post["html"].encode(
-            'utf-8')), str(post["html"].encode('utf-8'))
-        url = post["url"]
+        group_name = post["group_name"]
+        this, html_val = str(post["html"].encode('utf-8')), str(post["html"].encode('utf-8'))
+        file_name = post["file_name"]
+        url = ""
+        regional_code = post["regional_code"]
+        logged_number = post["phone_number"]
 
         if is_audio(this):
-            get_audio(this, group_name, url)
+            get_audio(this, group_name, url, regional_code, logged_number)
 
         elif is_pdf(this):
-            get_pdf(this, group_name, url)
+            get_pdf(this, group_name, url, regional_code, logged_number)
 
         elif is_group_invite(this):
-            get_group_invite(this, group_name)
+            get_group_invite(this, group_name, regional_code, logged_number)
 
         elif is_video_desc(this):
-            get_video_desc(this, group_name, url)
+            get_video_desc(this, group_name, url, regional_code, logged_number)
 
         elif is_video(this):
             get_video(this, group_name, url)
 
         elif is_img_desc(this):
-            get_img_desc(this, group_name, url)
+            get_img_desc(this, group_name, url, file_name, regional_code, logged_number)
 
         elif is_img(this):
-            get_img(this, group_name, url)
+            get_img(this, group_name, url, file_name, regional_code, logged_number)
 
         elif is_link_desc(this):
-            get_link_desc(this, group_name)
+            get_link_desc(this, group_name, regional_code, logged_number)
 
         elif is_link(this):
-            get_link(this, group_name)
+            get_link(this, group_name, regional_code, logged_number)
 
         elif is_text(this):
-            get_text(this, group_name)
+            get_text(this, group_name, regional_code, logged_number)
         else:
             "do nothing"
         return "what"
