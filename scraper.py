@@ -7,6 +7,7 @@ import time
 import json
 import redis
 import base64
+import random
 import pprint
 import signal
 import os.path
@@ -14,15 +15,13 @@ import logging
 import hashlib
 import requests
 
-from selenium import webdriver
-from selenium.common.exceptions import NoSuchElementException, StaleElementReferenceException
-from selenium.webdriver.common.keys import Keys
+from bs4 import BeautifulSoup
 from pymongo import MongoClient
 from bson.objectid import ObjectId
-from bs4 import BeautifulSoup
-
-client = MongoClient("mongodb://127.0.0.1:27017")
-db = client["osint_1"]
+from selenium import webdriver
+from selenium.webdriver.common.keys import Keys
+from selenium.webdriver.common.action_chains import ActionChains
+from selenium.common.exceptions import NoSuchElementException, StaleElementReferenceException
     
 try:
     regional_code = sys.argv[1]
@@ -122,6 +121,36 @@ def main(driver):
                     chats2 = driver.find_elements_by_css_selector(chats2)
                     chats = chats1 + chats2
                     retake(driver)
+                    
+                    # 
+                    # div[tabindex] > ul > li[data-animate-dropdown-item]
+                    # div[contenteditable="true"]
+
+                    message_in = driver.find_elements_by_css_selector('div.message-in')
+                    message_in = message_in[random.randint(0,len(message_in)-1)]
+
+                    hover = ActionChains(driver).move_to_element(message_in)
+                    hover.perform()
+
+                    time.sleep(5)
+
+                    print("click opt")
+                    chat_opt = driver.find_element_by_css_selector('span[data-icon="down-context"]')
+                    chat_opt.click()
+
+                    time.sleep(2)
+
+                    print("click list")
+                    opt_list = driver.find_elements_by_css_selector('div[tabindex] > ul > li[data-animate-dropdown-item]')
+                    opt_list[0].click()
+
+                    time.sleep(1)
+
+                    print("send chat")
+                    driver.find_element_by_css_selector('div[contenteditable="true"]').send_keys('Baru nyate ini lur \n \n')
+
+                    time.sleep(5000000)
+
                     for c in chats:
                         html = ""
                         
@@ -160,7 +189,7 @@ def main(driver):
                                 file_name = uniq_img_desc + '.jpeg'
                                 url = src[0]['src']
                                 downloadBlob(driver, url, file_name)
-                            elif is_img(html_val):
+                            elif is_img(html_val):  
                                 src = soup.select('img[src*="blob"]')
                                 url = src[0]['src']
                                 file_name = buffhash + '.jpeg'
@@ -331,7 +360,7 @@ if __name__ == '__main__':
 
     options = webdriver.ChromeOptions()
     options.add_argument("--user-data-dir=" + dataPath)
-    options.add_argument('headless')
+    # options.add_argument('headless')
     options.add_argument('no-sandbox')
     options.add_argument('user-agent=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_3) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/64.0.3282.167 Safari/537.36')
     
